@@ -18,7 +18,6 @@
     <!-- Custom CSS -->
     <link rel="stylesheet" href="<?= BASE_URL ?>assets/css/styles.css">
 
-
 </head>
 
 <body>
