@@ -1,118 +1,196 @@
 <?php
-require_once __DIR__ . '/../includes/config.php';
+$pageTitle = 'Dashboard';
 require_once __DIR__ . '/../includes/auth.php';
-
+require_once __DIR__ . '/../includes/db.php';
 requireAdmin();
+
+// Total Employees
+$totalEmployees = $conn->query("
+    SELECT COUNT(*) FROM users WHERE role = 'employee'
+")->fetchColumn();
+
+// Active Employees
+$activeEmployees = $conn->query("
+    SELECT COUNT(*) FROM users 
+    WHERE role = 'employee' AND status = 1
+")->fetchColumn();
+
+// Departments
+$totalDepartments = $conn->query("
+    SELECT COUNT(*) FROM departments
+")->fetchColumn();
+
+// Total Tasks
+$totalTasks = $conn->query("
+    SELECT COUNT(*) FROM tasks
+")->fetchColumn() ?? 0;
+
+// Pending Tasks
+$pendingTasks = $conn->query("
+    SELECT COUNT(*) FROM tasks WHERE status = 'pending'
+")->fetchColumn() ?? 0;
+
+// Recent Employees
+$recentEmployees = $conn->query("
+    SELECT name, email 
+    FROM users 
+    WHERE role = 'employee'
+    ORDER BY id DESC
+    LIMIT 5
+")->fetchAll();
+
+$deptStats = $conn->query("
+    SELECT d.name, COUNT(e.id) AS total
+    FROM departments d
+    LEFT JOIN employees e ON e.department_id = d.id
+    GROUP BY d.id
+")->fetchAll();
+
+$deptNames = [];
+$deptCounts = [];
+
+foreach ($deptStats as $d) {
+    $deptNames[] = $d['name'];
+    $deptCounts[] = $d['total'];
+}
+
+$taskStats = $conn->query("
+    SELECT status, COUNT(*) as total
+    FROM tasks
+    GROUP BY status
+")->fetchAll();
+
+$taskLabels = [];
+$taskCounts = [];
+
+foreach ($taskStats as $t) {
+    $taskLabels[] = ucfirst($t['status']);
+    $taskCounts[] = $t['total'];
+}
+
+
+require __DIR__ . '/layout/wrapper-start.php';
 ?>
 
-<div class="admin-layout">
+<!-- DASHBOARD CONTENT -->
+<section class="dashboard-content">
 
-    <!-- SIDEBAR -->
-    <aside class="sidebar">
-        <div class="sidebar-brand">
-            <i class="fa-solid fa-users-gear"></i>
-            <span>EMS Admin</span>
+    <!-- STATS -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon bg-blue">
+                <i class="fa-solid fa-users"></i>
+            </div>
+            <div>
+                <h3>Employees</h3>
+                <p class="counter" data-target="<?= $totalEmployees ?>">0</p>
+
+            </div>
         </div>
 
-        <nav class="sidebar-nav">
-            <a href="<?= ADMIN_DASHBOARD ?>" class="active">
-                <i class="fa-solid fa-chart-line"></i>
-                Dashboard
-            </a>
-
-            <a href="<?= BASE_URL ?>admin/employees/list">
-                <i class="fa-solid fa-users"></i>
-                Employees
-            </a>
-
-            <a href="<?= BASE_URL ?>admin/tasks">
+        <div class="stat-card">
+            <div class="stat-icon bg-green">
                 <i class="fa-solid fa-list-check"></i>
-                Tasks
-            </a>
+            </div>
+            <div>
+                <h3>Tasks</h3>
+                <p class="counter" data-target="<?= $totalEmployees ?>">0</p>
 
-            <a href="<?= BASE_URL ?>admin/departments">
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon bg-orange">
                 <i class="fa-solid fa-building"></i>
-                Departments
-            </a>
-
-            <a href="<?= BASE_URL ?>logout">
-                <i class="fa-solid fa-right-from-bracket"></i>
-                Logout
-            </a>
-        </nav>
-    </aside>
-
-    <!-- MAIN CONTENT -->
-    <div class="main-content">
-
-        <!-- TOPBAR -->
-        <header class="topbar">
-            <h1>Dashboard</h1>
-
-            <div class="topbar-user">
-                <i class="fa-solid fa-user-circle"></i>
-                <span><?= htmlspecialchars(currentUser()['name']) ?></span>
             </div>
-        </header>
+            <div>
+                <h3>Departments</h3>
+                <p class="counter" data-target="<?= $totalDepartments ?>">0</p>
 
-        <!-- DASHBOARD CONTENT -->
-        <section class="dashboard-content">
-
-            <!-- STATS -->
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-icon bg-blue">
-                        <i class="fa-solid fa-users"></i>
-                    </div>
-                    <div>
-                        <h3>Employees</h3>
-                        <p>24</p>
-                    </div>
-                </div>
-
-                <div class="stat-card">
-                    <div class="stat-icon bg-green">
-                        <i class="fa-solid fa-list-check"></i>
-                    </div>
-                    <div>
-                        <h3>Tasks</h3>
-                        <p>128</p>
-                    </div>
-                </div>
-
-                <div class="stat-card">
-                    <div class="stat-icon bg-orange">
-                        <i class="fa-solid fa-building"></i>
-                    </div>
-                    <div>
-                        <h3>Departments</h3>
-                        <p>6</p>
-                    </div>
-                </div>
-
-                <div class="stat-card">
-                    <div class="stat-icon bg-purple">
-                        <i class="fa-solid fa-clock"></i>
-                    </div>
-                    <div>
-                        <h3>Pending Tasks</h3>
-                        <p>18</p>
-                    </div>
-                </div>
             </div>
+        </div>
 
-            <!-- PLACEHOLDER CONTENT -->
-            <div class="card mt-4">
+        <div class="stat-card">
+            <div class="stat-icon bg-purple">
+                <i class="fa-solid fa-clock"></i>
+            </div>
+            <div>
+                <h3>Pending Tasks</h3>
+                <p class="counter" data-target="<?= $pendingTasks ?>">0</p>
+
+            </div>
+        </div>
+    </div>
+    <div class="card mt-4">
+        <div class="card-body">
+            <h5 class="card-title">Recent Employees</h5>
+
+            <?php if (!$recentEmployees): ?>
+                <p class="text-muted">No employees yet.</p>
+            <?php else: ?>
+                <ul class="list-group list-group-flush">
+                    <?php foreach ($recentEmployees as $emp): ?>
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span><?= htmlspecialchars($emp['name']) ?></span>
+                            <small class="text-muted">
+                                <?= htmlspecialchars($emp['email']) ?>
+                            </small>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+            <?php endif; ?>
+
+        </div>
+    </div>
+    <!-- CHARTs -->
+    <div class="row mt-4">
+
+        <!-- Employees by Department -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
                 <div class="card-body">
-                    <h5 class="card-title">Welcome 👋</h5>
-                    <p class="text-muted">
-                        This is your admin dashboard. From here you can manage employees,
-                        assign tasks, create departments, and monitor activity.
-                    </p>
+                    <h5 class="card-title">Employees by Department</h5>
+                    <div class="chart-wrapper">
+                        <canvas id="departmentChart" data-labels='<?= json_encode($deptNames) ?>'
+                            data-counts='<?= json_encode($deptCounts) ?>'>
+                        </canvas>
+                    </div>
                 </div>
             </div>
+        </div>
 
-        </section>
+        <!-- Task Status -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Task Status Overview</h5>
+                    <div class="chart-wrapper">
+                        <canvas id="taskStatusChart" data-labels='<?= json_encode($taskLabels) ?>'
+                            data-counts='<?= json_encode($taskCounts) ?>'>
+                        </canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
 
-</div>
+
+
+
+    <!-- PLACEHOLDER CONTENT -->
+    <div class="card mt-4">
+        <div class="card-body">
+            <h5 class="card-title">Welcome 👋</h5>
+            <p class="text-muted">
+                This is your admin dashboard. From here you can manage employees,
+                assign tasks, create departments, and monitor activity.
+            </p>
+        </div>
+    </div>
+
+</section>
+
+<?php
+require __DIR__ . '/layout/wrapper-end.php';
+?>
