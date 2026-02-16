@@ -3,7 +3,8 @@ require_once __DIR__ . '/../../includes/auth.php';
 require_once __DIR__ . '/../../includes/db.php';
 
 requireAdmin();
-
+$pageTitle = 'update employee';
+require __DIR__ . '/../layout/wrapper-start.php';
 $id = (int)($_GET['id'] ?? 0);
 if (!$id) {
     die('Invalid employee ID');
@@ -71,10 +72,10 @@ $departments = $conn->query("
                     <select name="department_id" class="form-control">
                         <option value="">Select department</option>
                         <?php foreach ($departments as $dept): ?>
-                        <option value="<?= $dept['id'] ?>"
-                            <?= $dept['id'] == $employee['department_id'] ? 'selected' : '' ?>>
-                            <?= htmlspecialchars($dept['name']) ?>
-                        </option>
+                            <option value="<?= $dept['id'] ?>"
+                                <?= $dept['id'] == $employee['department_id'] ? 'selected' : '' ?>>
+                                <?= htmlspecialchars($dept['name']) ?>
+                            </option>
                         <?php endforeach; ?>
                     </select>
                 </div>
@@ -124,3 +125,6 @@ $departments = $conn->query("
         </div>
     </form>
 </div>
+<?php
+require __DIR__ . '/../layout/wrapper-end.php';
+?>

@@ -6,6 +6,10 @@ require_once __DIR__ . '/../../includes/db.php';
 
 requireAdmin();
 ?>
+<?php
+$pageTitle = 'Employees Management';
+require __DIR__ . '/../layout/wrapper-start.php';
+?>
 
 <div class="dashboard-content">
 
@@ -112,3 +116,6 @@ requireAdmin();
 
 
 </div>
+<?php
+require __DIR__ . '/../layout/wrapper-end.php';
+?>

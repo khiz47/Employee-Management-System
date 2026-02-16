@@ -4,6 +4,10 @@ require_once __DIR__ . '/../../includes/db.php';
 
 requireAdmin();
 
+$pageTitle = 'Create Employee';
+require __DIR__ . '/../layout/wrapper-start.php';
+
+
 $departments = $conn->query("
     SELECT id, name 
     FROM departments 
@@ -40,9 +44,9 @@ $departments = $conn->query("
                     <select name="department_id" class="form-control">
                         <option value="">Select department</option>
                         <?php foreach ($departments as $dept): ?>
-                        <option value="<?= $dept['id'] ?>">
-                            <?= htmlspecialchars($dept['name']) ?>
-                        </option>
+                            <option value="<?= $dept['id'] ?>">
+                                <?= htmlspecialchars($dept['name']) ?>
+                            </option>
                         <?php endforeach; ?>
                     </select>
                 </div>
@@ -82,3 +86,6 @@ $departments = $conn->query("
         </div>
     </form>
 </div>
+<?php
+require __DIR__ . '/../layout/wrapper-end.php';
+?>
