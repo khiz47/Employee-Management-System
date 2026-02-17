@@ -104,6 +104,11 @@ a:hover {
   border-radius: var(--border-radius);
   box-shadow: var(--shadow-sm);
   background-color: var(--bg-card);
+  overflow: hidden;
+}
+.card-title {
+  font-weight: 600;
+  margin-bottom: 1rem;
 }
 
 /* =========================
@@ -219,14 +224,49 @@ a:hover {
 .admin-layout {
   display: flex;
   min-height: 100vh;
+  position: relative;
 }
 
 /* SIDEBAR */
 .sidebar {
   width: 260px;
-  background-color: var(--bg-card);
+  background: var(--bg-card);
   border-right: 1px solid var(--border-color);
   padding: 1.5rem 1rem;
+  transition: 0.3s ease;
+  z-index: 1000;
+}
+
+/* Collapsed Sidebar (desktop toggle future ready) */
+.sidebar.collapsed {
+  width: 70px;
+}
+
+.sidebar.collapsed .sidebar-brand span,
+.sidebar.collapsed .sidebar-nav span {
+  display: none;
+}
+
+/* =========================
+   MOBILE SIDEBAR ROD
+========================= */
+
+.sidebar-rod {
+  position: fixed;
+  left: 0;
+  top: 100px;
+  width: 6px;
+  height: 60px;
+  background: var(--primary-color);
+  border-radius: 0 6px 6px 0;
+  cursor: pointer;
+  z-index: 1100;
+  transition: var(--transition-fast);
+  display: none;
+}
+
+.sidebar-rod:hover {
+  width: 10px;
 }
 
 .sidebar-brand {
@@ -262,6 +302,7 @@ a:hover {
   flex: 1;
   display: flex;
   flex-direction: column;
+  transition: 0.3s ease;
 }
 
 /* TOPBAR */
@@ -272,6 +313,27 @@ a:hover {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.sidebar-toggle {
+  display: none;
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  color: var(--primary-color);
+}
+
+/* OVERLAY (Mobile) */
+.sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.3);
+  display: none;
+  z-index: 900;
+}
+
+.sidebar-overlay.active {
+  display: block;
 }
 
 .topbar h1 {
@@ -290,64 +352,145 @@ a:hover {
 .dashboard-content {
   padding: 1.5rem;
 }
-
+/* ========================= */
 /* STATS */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 1rem;
 }
-
+/* STAT CARD */
 .stat-card {
-  background-color: var(--bg-card);
+  background: var(--bg-card);
   border-radius: var(--border-radius);
-  padding: 1rem;
+  padding: 1.2rem;
   display: flex;
   align-items: center;
   gap: 1rem;
   box-shadow: var(--shadow-sm);
+  transition: var(--transition-fast);
+  border: 1px solid var(--border-color);
+}
+
+.stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
 }
 
 .stat-card h3 {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: var(--text-muted);
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.3rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .stat-card p {
-  font-size: 1.5rem;
-  font-weight: 600;
+  font-size: 1.7rem;
+  font-weight: 700;
+  color: var(--text-dark);
 }
-
 /* ICON COLORS */
 .stat-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 10px;
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 1.2rem;
   color: #fff;
 }
 
+/* Use soft gradient feel */
 .bg-blue {
-  background-color: #2563eb;
+  background: linear-gradient(135deg, #2563eb, #1e40af);
 }
+
 .bg-green {
-  background-color: #16a34a;
+  background: linear-gradient(135deg, #16a34a, #15803d);
 }
+
 .bg-orange {
-  background-color: #ea580c;
+  background: linear-gradient(135deg, #ea580c, #c2410c);
 }
+
 .bg-purple {
-  background-color: #7c3aed;
+  background: linear-gradient(135deg, #7c3aed, #5b21b6);
 }
+
 .chart-wrapper {
   position: relative;
-  max-width: 420px; /* control width */
-  height: 320px; /* control height */
-  margin: 0 auto; /* center it */
+  width: 100%;
+  min-height: 300px;
+  flex: 1;
 }
+
+.recent-employee-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.recent-employee-item {
+  background: var(--bg-light);
+  padding: 12px 16px;
+  border-radius: var(--border-radius);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: var(--transition-fast);
+}
+
+.recent-employee-item:hover {
+  background: var(--card-hover);
+}
+
+.recent-employee-name {
+  font-weight: 500;
+}
+
+.recent-employee-email {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+/* ================= EMPLOYEE LIST RESPONSIVE ================= */
+
+.table-responsive {
+  border-radius: var(--border-radius);
+}
+
+.table thead th {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.table tbody td {
+  vertical-align: middle;
+}
+
+/* Action buttons */
+.action-buttons {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* Pagination spacing */
+.pagination .page-link {
+  border-radius: 6px;
+  margin: 0 2px;
+  color: var(--primary-color);
+}
+
+.pagination .page-item.active .page-link {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: #fff;
+}
+
+/* ------------------------------------- TASK CARD--------------------------- */
 .task-card {
   transition: 0.2s ease;
 }
@@ -565,17 +708,61 @@ a:hover {
   transition: 0.3s ease;
 }
 
-/* RESPONSIVE */
-@media (max-width: 768px) {
-  .sidebar {
-    display: none;
-  }
-}
-
 /* =========================
    RESPONSIVE LOGIN UI
 ========================= */
 
+/* =========================
+   MOBILE MODE
+========================= */
+
+@media (max-width: 992px) {
+  .sidebar {
+    position: fixed;
+    left: -260px;
+    top: 0;
+    height: 100vh;
+    width: 260px;
+    background: var(--bg-card);
+    transition: 0.3s ease;
+  }
+
+  .sidebar.active {
+    left: 0;
+  }
+
+  .sidebar-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.3);
+    display: none;
+    z-index: 900;
+  }
+
+  .sidebar-overlay.active {
+    display: block;
+  }
+
+  /* ROD */
+  .sidebar-rod {
+    display: block;
+    position: fixed;
+    left: 0;
+    top: 100px;
+    width: 6px;
+    height: 60px;
+    background: var(--primary-color);
+    border-radius: 0 6px 6px 0;
+    z-index: 1100;
+    transition: 0.3s ease;
+  }
+
+  /* When sidebar open → rod moves */
+  .sidebar.active + .sidebar-rod {
+    left: 260px;
+    /* border-radius: 6px 0 0 6px; */
+  }
+}
 /* Small devices (phones) */
 @media (max-width: 576px) {
   .auth-wrapper {
@@ -625,5 +812,51 @@ a:hover {
 @media (max-width: 768px) {
   .auth-card {
     padding: 35px 30px;
+  }
+}
+@media (max-width: 768px) {
+  /* .chart-wrapper {
+    min-height: 240px;
+  } */
+  canvas {
+    width: 100% !important;
+    height: 100% !important;
+  }
+  .dashboard-content {
+    padding: 1rem;
+  }
+  .hideHeader {
+    display: none;
+  }
+  /* Table */
+  .action-buttons {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .table thead {
+    display: none;
+  }
+
+  .table tbody tr {
+    display: block;
+    margin-bottom: 1rem;
+    background: var(--bg-card);
+    box-shadow: var(--shadow-sm);
+    border-radius: var(--border-radius);
+    padding: 1rem;
+  }
+
+  .table tbody td {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    border: none;
+  }
+
+  .table tbody td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: var(--text-muted);
   }
 }

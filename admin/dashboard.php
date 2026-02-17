@@ -94,7 +94,7 @@ require __DIR__ . '/layout/wrapper-start.php';
             </div>
             <div>
                 <h3>Tasks</h3>
-                <p class="counter" data-target="<?= $totalEmployees ?>">0</p>
+                <p class="counter" data-target="<?= $totalTasks ?>">0</p>
 
             </div>
         </div>
@@ -129,24 +129,30 @@ require __DIR__ . '/layout/wrapper-start.php';
                 <p class="text-muted">No employees yet.</p>
             <?php else: ?>
                 <ul class="list-group list-group-flush">
-                    <?php foreach ($recentEmployees as $emp): ?>
-                        <li class="list-group-item d-flex justify-content-between">
-                            <span><?= htmlspecialchars($emp['name']) ?></span>
-                            <small class="text-muted">
-                                <?= htmlspecialchars($emp['email']) ?>
-                            </small>
-                        </li>
-                    <?php endforeach; ?>
+                    <div class="recent-employee-list">
+                        <?php foreach ($recentEmployees as $emp): ?>
+                            <div class="recent-employee-item">
+                                <div class="recent-employee-name">
+                                    <?= htmlspecialchars($emp['name']) ?>
+                                </div>
+                                <div class="recent-employee-email">
+                                    <?= htmlspecialchars($emp['email']) ?>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+
                 </ul>
             <?php endif; ?>
 
         </div>
     </div>
+
     <!-- CHARTs -->
-    <div class="row mt-4">
+    <div class="row mt-4 g-4">
 
         <!-- Employees by Department -->
-        <div class="col-lg-6 mb-4">
+        <div class="col-12 col-lg-6 mb-4 ">
             <div class="card h-100">
                 <div class="card-body">
                     <h5 class="card-title">Employees by Department</h5>
@@ -160,7 +166,7 @@ require __DIR__ . '/layout/wrapper-start.php';
         </div>
 
         <!-- Task Status -->
-        <div class="col-lg-6 mb-4">
+        <div class="col-12 col-lg-6 mb-4 ">
             <div class="card h-100">
                 <div class="card-body">
                     <h5 class="card-title">Task Status Overview</h5>
@@ -174,7 +180,6 @@ require __DIR__ . '/layout/wrapper-start.php';
         </div>
 
     </div>
-
 
 
 
