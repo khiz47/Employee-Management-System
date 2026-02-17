@@ -66,6 +66,12 @@ $departments = $conn->query("
                     <input type="email" name="email" class="form-control"
                         value="<?= htmlspecialchars($employee['email']) ?>" required>
                 </div>
+                <div class="col-md-6">
+                    <label class="form-label">New Password</label>
+                    <input type="password" name="new_password" class="form-control" minlength="6">
+                    <small class="text-muted">Leave blank to keep current password</small>
+                </div>
+
 
                 <div class="col-md-6">
                     <label class="form-label">Department</label>

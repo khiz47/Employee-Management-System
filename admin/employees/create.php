@@ -38,6 +38,18 @@ $departments = $conn->query("
                     <input type="email" name="email" class="form-control" required>
                 </div>
 
+                <div class="col-md-6">
+                    <label class="form-label">Password *</label>
+                    <input type="password" name="password" class="form-control" required minlength="6">
+                    <small class="text-muted">Minimum 6 characters</small>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">Confirm Password *</label>
+                    <input type="password" name="confirm_password" class="form-control" required minlength="6">
+                </div>
+
+
                 <!-- OPTIONAL -->
                 <div class="col-md-6">
                     <label class="form-label">Department</label>

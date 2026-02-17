@@ -11,8 +11,8 @@ require __DIR__ . '/../layout/wrapper-start.php';
 <div class="dashboard-content">
 
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>Tasks</h2>
-        <div>
+        <h2 class="hideHeader">Tasks</h2>
+        <div class="d-flex gap-2">
             <a href="<?= BASE_URL ?>admin/tasks/create" class="btn btn-primary">
                 + Create Task
             </a>

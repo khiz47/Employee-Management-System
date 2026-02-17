@@ -1,4 +1,38 @@
 const BASE_URL = window.location.origin + "/";
+// ============================
+// SIDEBAR TOGGLE
+// ============================
+const sidebar = document.querySelector(".sidebar");
+const overlay = document.getElementById("sidebarOverlay");
+const rod = document.getElementById("sidebarRod");
+
+let startX = 0;
+
+// Open by click
+rod?.addEventListener("click", () => {
+  sidebar.classList.add("active");
+  overlay.classList.add("active");
+});
+
+// Close by overlay click
+overlay?.addEventListener("click", () => {
+  sidebar.classList.remove("active");
+  overlay.classList.remove("active");
+});
+
+// Swipe from rod only
+rod?.addEventListener("touchstart", (e) => {
+  startX = e.touches[0].clientX;
+});
+
+rod?.addEventListener("touchend", (e) => {
+  const endX = e.changedTouches[0].clientX;
+
+  if (endX > startX + 40) {
+    sidebar.classList.add("active");
+    overlay.classList.add("active");
+  }
+});
 
 function animateCounters() {
   $(".counter").each(function () {
@@ -235,11 +269,12 @@ function renderTable(rows) {
 
     tbody.append(`
       <tr>
-        <td>${emp.name}</td>
-        <td>${emp.email}</td>
-        <td>${emp.department ?? "—"}</td>
-        <td>${statusBadge}</td>
-        <td>
+        <td data-label="Name">${emp.name}</td>
+        <td data-label="Email">${emp.email}</td>
+        <td data-label="Department">${emp.department ?? "—"}</td>
+        <td data-label="Status">${statusBadge}</td>
+        <td data-label="Actions">
+        <div class="action-buttons">
           <a href="${BASE_URL}admin/employees/view?id=${emp.id}"
              class="btn btn-sm btn-outline-secondary">View</a>
 
@@ -253,6 +288,7 @@ function renderTable(rows) {
             data-status="${emp.status}">
             ${toggleBtnText}
           </button>
+        </div>
         </td>
       </tr>
     `);
@@ -504,9 +540,9 @@ function renderTransferEmployees(rows) {
   rows.forEach((emp) => {
     tbody.append(`
       <tr>
-        <td>${emp.name}</td>
-        <td>${emp.email}</td>
-        <td>${emp.designation ?? "-"}</td>
+        <td data-label="Name">${emp.name}</td>
+        <td data-label="Email">${emp.email}</td>
+        <td data-label="Designation">${emp.designation ?? "-"}</td>
       </tr>
     `);
   });
@@ -597,14 +633,15 @@ function renderDepartmentTable(rows) {
 
     tbody.append(`
       <tr>
-        <td>${dept.name}</td>
-        <td>
+        <td data-label="Name">${dept.name}</td>
+        <td data-label="Employee Count">
           <span class="badge bg-info text-dark">
             ${dept.employee_count}
           </span>
         </td>
-        <td>${badge}</td>
-        <td>
+        <td data-label="Status">${badge}</td>
+        <td data-label="Actions">
+        <div class="action-buttons">
           <a href="${BASE_URL}admin/departments/edit?id=${dept.id}"
              class="btn btn-sm btn-outline-primary">Edit</a>
 
@@ -619,6 +656,7 @@ function renderDepartmentTable(rows) {
             class="btn btn-sm btn-outline-danger">
               <i class="fa fa-exchange"></i>
           </a>
+        </div>
 
         </td>
       </tr>
@@ -1148,7 +1186,7 @@ $(document).ready(function () {
   if (deptId) {
     $("#departmentSelect").trigger("change");
   }
-
+  //------------------------------dashboard code-----------------------------
   if ($(".counter").length) {
     animateCounters();
   }
@@ -1168,7 +1206,9 @@ $(document).ready(function () {
           {
             data: counts,
             backgroundColor: [
-              "#2563eb",
+              getComputedStyle(document.documentElement).getPropertyValue(
+                "--primary-color",
+              ),
               "#16a34a",
               "#ea580c",
               "#7c3aed",
@@ -1181,8 +1221,17 @@ $(document).ready(function () {
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        animation: {
+          duration: 800,
+        },
         plugins: {
-          legend: { position: "bottom" },
+          legend: {
+            position: "bottom",
+            labels: {
+              boxWidth: 12,
+              padding: 15,
+            },
+          },
         },
       },
     });
@@ -1211,17 +1260,38 @@ $(document).ready(function () {
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        animation: {
+          duration: 800,
+        },
         plugins: {
-          legend: { display: false },
+          legend: {
+            position: "bottom",
+            labels: {
+              boxWidth: 12,
+              padding: 15,
+            },
+          },
         },
         scales: {
           y: {
             beginAtZero: true,
+            ticks: {
+              precision: 0,
+            },
+            grid: {
+              color: "rgba(0,0,0,0.05)",
+            },
+          },
+          x: {
+            grid: {
+              display: false,
+            },
           },
         },
       },
     });
   }
+  //------------------------------dashboard End-----------------------------
 
   if ($("#employeeTableBody").length) {
     loadEmployees();

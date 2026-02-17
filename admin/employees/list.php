@@ -14,7 +14,7 @@ require __DIR__ . '/../layout/wrapper-start.php';
 <div class="dashboard-content">
 
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h2>Employees</h2>
+        <h2 class="hideHeader">Employees</h2>
 
         <div class="d-flex gap-2">
             <button id="exportCsvBtn" class="btn btn-outline-secondary">
@@ -49,8 +49,8 @@ require __DIR__ . '/../layout/wrapper-start.php';
 
             <!-- SEARCH -->
             <input type="text" id="employeeSearch" class="form-control" placeholder="Type to search employees...">
-            <div class="row mt-3">
-                <div class="col-md-3">
+            <div class="row g-3 mt-3">
+                <div class="col-12 col-md-4">
                     <select id="statusFilter" class="form-select">
                         <option value="all">All Status</option>
                         <option value="1">Active</option>
@@ -58,7 +58,7 @@ require __DIR__ . '/../layout/wrapper-start.php';
                     </select>
                 </div>
 
-                <div class="col-md-3">
+                <div class="col-12 col-md-4">
                     <select id="departmentFilter" class="form-select">
                         <option value="all">All Departments</option>
                         <?php
@@ -72,7 +72,7 @@ require __DIR__ . '/../layout/wrapper-start.php';
                     </select>
                 </div>
 
-                <div class="col-md-3">
+                <div class="col-12 col-md-4">
                     <select id="rowsPerPage" class="form-select">
                         <option value="5">Show 5</option>
                         <option value="10" selected>Show 10</option>
@@ -90,20 +90,22 @@ require __DIR__ . '/../layout/wrapper-start.php';
 
     <div class="card">
         <div class="card-body p-0">
-            <table class="table table-hover mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th>Name</th>
-                        <th>Email</th>
-                        <th>Department</th>
-                        <th>Status</th>
-                        <th width="220">Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="employeeTableBody">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Department</th>
+                            <th>Status</th>
+                            <th width="220">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="employeeTableBody">
 
-                </tbody>
-            </table>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 

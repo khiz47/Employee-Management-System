@@ -188,7 +188,20 @@ function addEmployee($conn)
     }
 
     // Auto password (internal)
-    $hashedPassword = password_hash(bin2hex(random_bytes(4)), PASSWORD_DEFAULT);
+    // $hashedPassword = password_hash(bin2hex(random_bytes(4)), PASSWORD_DEFAULT);
+
+    $password = $_POST['password'] ?? '';
+    $confirmPassword = $_POST['confirm_password'] ?? '';
+
+    if (strlen($password) < 6) {
+        sendResponse(false, null, 'Password must be at least 6 characters.');
+    }
+
+    if ($password !== $confirmPassword) {
+        sendResponse(false, null, 'Passwords do not match.');
+    }
+
+    $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
     $conn->beginTransaction();
 
@@ -282,6 +295,25 @@ function updateEmployee($conn)
             $empStatus,
             $userId
         ]);
+        $newPassword = $_POST['new_password'] ?? '';
+
+        if (!empty($newPassword)) {
+
+            if (strlen($newPassword) < 6) {
+                sendResponse(false, null, 'Password must be at least 6 characters.');
+            }
+
+            $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
+
+            $updatePass = $conn->prepare("
+                UPDATE users 
+                SET password = ?
+                WHERE id = ?
+            ");
+
+            $updatePass->execute([$hashedPassword, $userId]);
+        }
+
 
         $conn->commit();
 
