@@ -43,8 +43,14 @@ $routes = [
 
 
     // Employee
+    'employee' => 'employee/index.php',
     'employee/dashboard' => 'employee/dashboard.php',
-    'employee/my-tasks'  => 'employee/my_tasks.php',
+    'employee/tasks/'  => 'employee/tasks/index.php',
+    'employee/tasks/list'  => 'employee/tasks/list.php',
+    'employee/tasks/view'  => 'employee/tasks/view.php',
+    'employee/attendance/'  => 'employee/attendance/index.php',
+    'employee/attendance/attendance'  => 'employee/attendance/attendance.php',
+    'employee/profile'  => 'employee/profile.php',
 ];
 
 $page = $routes[$request] ?? 'auth/login.php';
