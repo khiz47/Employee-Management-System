@@ -226,6 +226,11 @@ a:hover {
   min-height: 100vh;
   position: relative;
 }
+.employee-layout {
+  display: flex;
+  min-height: 100vh;
+  position: relative;
+}
 
 /* SIDEBAR */
 .sidebar {
@@ -245,6 +250,19 @@ a:hover {
 .sidebar.collapsed .sidebar-brand span,
 .sidebar.collapsed .sidebar-nav span {
   display: none;
+}
+/* emeployee-layout */
+.employee-layout .sidebar {
+  border-right: 1px solid var(--border-color);
+  background: linear-gradient(180deg, #ffffff, #f8fafc);
+}
+
+.employee-layout .sidebar-brand {
+  color: var(--primary-dark);
+}
+
+.employee-layout .topbar {
+  background: linear-gradient(90deg, #ffffff, #f8fafc);
 }
 
 /* =========================

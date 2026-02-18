@@ -1180,6 +1180,139 @@ $(document).on("click", "#confirmDeleteBtn", function () {
   });
 });
 
+// ------------------------------Employee code-------------------------------
+// =============================
+// EMPLOYEE TASKS
+// =============================
+
+let empTaskPage = 1;
+let empTaskLimit = 6;
+let empTaskStatus = "all";
+let empTaskPriority = "all";
+
+function loadEmployeeTasks() {
+  $.ajax({
+    url: BASE_URL + "includes/functions.php",
+    type: "POST",
+    dataType: "json",
+    data: {
+      action: "fetch_employee_tasks",
+      page: empTaskPage,
+      limit: empTaskLimit,
+      status: empTaskStatus,
+      priority: empTaskPriority,
+    },
+    success: function (res) {
+      if (!res.status) return alert(res.message);
+
+      renderEmployeeTasks(res.data.rows);
+      renderEmployeeTaskPagination(res.data.total);
+    },
+  });
+}
+
+function renderEmployeeTasks(tasks) {
+  const container = $("#employeeTaskContainer");
+  container.empty();
+
+  if (!tasks.length) {
+    container.html("<p class='text-muted'>No tasks found</p>");
+    return;
+  }
+
+  tasks.forEach((task) => {
+    const isOverdue =
+      task.due_date &&
+      task.due_date < new Date().toISOString().split("T")[0] &&
+      task.status !== "completed";
+
+    const priorityColor =
+      task.priority === "high"
+        ? "danger"
+        : task.priority === "medium"
+          ? "warning"
+          : "primary";
+
+    container.append(`
+      <div class="col-md-6 col-lg-4">
+        <div class="card task-card ${isOverdue ? "border-danger" : ""}">
+          <div class="card-body">
+
+            <div class="d-flex justify-content-between mb-2">
+              <span class="badge bg-${priorityColor}">
+                ${task.priority.toUpperCase()}
+              </span>
+
+              <span class="badge ${
+                task.status === "completed" ? "bg-success" : "bg-secondary"
+              }">
+                ${task.status.replace("_", " ").toUpperCase()}
+              </span>
+            </div>
+
+            <h5>${task.title}</h5>
+
+            <div class="mt-2">
+              <small>
+                Due: ${task.due_date ?? "—"}
+                ${isOverdue ? `<span class="text-danger">(Overdue)</span>` : ""}
+              </small>
+            </div>
+
+            <div class="progress mt-3" style="height:6px;">
+              <div class="progress-bar bg-success"
+                   style="width:${task.progress}%"></div>
+            </div>
+            <small>${task.progress}% completed</small>
+
+            <div class="mt-3">
+              <a href="${BASE_URL}employee/tasks/view?id=${task.id}"
+                 class="btn btn-sm btn-outline-primary w-100">
+                 View Task
+              </a>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    `);
+  });
+}
+
+function renderEmployeeTaskPagination(totalRows) {
+  const pagination = $("#employeeTaskPagination");
+  pagination.empty();
+
+  const totalPages = Math.ceil(totalRows / empTaskLimit);
+  if (totalPages <= 1) return;
+
+  for (let i = 1; i <= totalPages; i++) {
+    pagination.append(`
+      <li class="page-item ${i === empTaskPage ? "active" : ""}">
+        <a class="page-link" href="#" data-page="${i}">${i}</a>
+      </li>
+    `);
+  }
+}
+
+$(document).on("click", "#employeeTaskPagination .page-link", function (e) {
+  e.preventDefault();
+  empTaskPage = parseInt($(this).data("page"));
+  loadEmployeeTasks();
+});
+
+$(document).on("change", "#employeeTaskStatus", function () {
+  empTaskStatus = $(this).val();
+  empTaskPage = 1;
+  loadEmployeeTasks();
+});
+
+$(document).on("change", "#employeeTaskPriority", function () {
+  empTaskPriority = $(this).val();
+  empTaskPage = 1;
+  loadEmployeeTasks();
+});
+
 $(document).ready(function () {
   const deptId = $("#departmentSelect").val();
 
@@ -1310,5 +1443,9 @@ $(document).ready(function () {
   }
   if ($("#taskHistoryContainer").length) {
     loadTaskHistory();
+  }
+
+  if ($("#employeeTaskContainer").length) {
+    loadEmployeeTasks();
   }
 });

@@ -97,6 +97,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             deleteTask($conn);
             break;
 
+        case 'fetch_employee_tasks':
+            fetchEmployeeTasks($conn);
+            break;
+
 
         default:
             sendResponse('error', null, 'Invalid action.');
@@ -851,8 +855,6 @@ function fetchTaskDepartmentEmployees($conn)
     sendResponse(true, $employees, 'OK');
 }
 
-
-
 function fetchTasks($conn)
 {
     if (!isLoggedIn() || currentUser()['role'] !== 'admin') {
@@ -958,6 +960,30 @@ function fetchTaskHistory($conn)
     ], 'OK');
 }
 
+// helpers function------------------------
+function checkTaskAccess($conn, $taskId)
+{
+    $user = currentUser();
+
+    if ($user['role'] === 'admin') {
+        return true;
+    }
+
+    $stmt = $conn->prepare("
+        SELECT 1 FROM task_assignments
+        WHERE task_id = ?
+        AND user_id = ?
+    ");
+    $stmt->execute([$taskId, $user['id']]);
+
+    if (!$stmt->fetch()) {
+        sendResponse(false, null, 'Access denied');
+    }
+
+    return true;
+}
+// helpers function------------------------
+
 function addTaskComment($conn)
 {
     if (!isLoggedIn()) {
@@ -970,6 +996,9 @@ function addTaskComment($conn)
     if (!$taskId || $comment === '') {
         sendResponse(false, null, 'Comment cannot be empty');
     }
+
+    // 🔒 CHECK ASSIGNMENT
+    checkTaskAccess($conn, $taskId);
 
     $conn->beginTransaction();
 
@@ -1076,6 +1105,9 @@ function uploadTaskAttachment($conn)
         sendResponse(false, null, 'Invalid request');
     }
 
+    // 🔒 CHECK ASSIGNMENT
+    checkTaskAccess($conn, $taskId);
+
     $file = $_FILES['file'];
 
     if ($file['error'] !== UPLOAD_ERR_OK) {
@@ -1163,6 +1195,9 @@ function updateTaskProgress($conn)
         sendResponse(false, null, 'Invalid data');
     }
 
+    // 🔒 CHECK ASSIGNMENT
+    checkTaskAccess($conn, $taskId);
+
     $conn->beginTransaction();
 
     try {
@@ -1204,6 +1239,8 @@ function updateTaskStatus($conn)
     if (!$taskId || !in_array($status, $allowed)) {
         sendResponse(false, null, 'Invalid status');
     }
+    // 🔒 CHECK ASSIGNMENT
+    checkTaskAccess($conn, $taskId);
 
     $conn->beginTransaction();
 
@@ -1332,4 +1369,64 @@ function deleteTask($conn)
         $conn->rollBack();
         sendResponse(false, null, 'Failed to delete task');
     }
+}
+
+
+function fetchEmployeeTasks($conn)
+{
+    if (!isLoggedIn() || currentUser()['role'] !== 'employee') {
+        sendResponse(false, null, 'Unauthorized');
+    }
+
+    $userId = currentUser()['id'];
+
+    $page  = max(1, (int)($_POST['page'] ?? 1));
+    $limit = (int)($_POST['limit'] ?? 6);
+    $status = $_POST['status'] ?? 'all';
+    $priority = $_POST['priority'] ?? 'all';
+
+    $where = ["ta.user_id = ?"];
+    $params = [$userId];
+
+    if ($status !== 'all') {
+        $where[] = "t.status = ?";
+        $params[] = $status;
+    }
+
+    if ($priority !== 'all') {
+        $where[] = "t.priority = ?";
+        $params[] = $priority;
+    }
+
+    $whereSql = "WHERE " . implode(" AND ", $where);
+
+    // TOTAL
+    $countStmt = $conn->prepare("
+        SELECT COUNT(DISTINCT t.id)
+        FROM tasks t
+        JOIN task_assignments ta ON ta.task_id = t.id
+        $whereSql
+    ");
+    $countStmt->execute($params);
+    $total = (int)$countStmt->fetchColumn();
+
+    $offset = ($page - 1) * $limit;
+
+    $stmt = $conn->prepare("
+        SELECT t.*
+        FROM tasks t
+        JOIN task_assignments ta ON ta.task_id = t.id
+        $whereSql
+        GROUP BY t.id
+        ORDER BY t.id DESC
+        LIMIT $limit OFFSET $offset
+    ");
+
+    $stmt->execute($params);
+    $rows = $stmt->fetchAll();
+
+    sendResponse(true, [
+        'rows' => $rows,
+        'total' => $total
+    ], 'OK');
 }
