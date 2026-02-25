@@ -30,8 +30,8 @@ define('DB_PASS', '');
 // EMAIL CONFIG
 // ============================
 define('MAIL_HOST', 'smtp.gmail.com');
-define('MAIL_USERNAME', 'khizerqureshi4774@gmail.com');
-define('MAIL_PASSWORD', 'rohy kkww zwli crhp');
+define('MAIL_USERNAME', 'example@gmail.com');
+define('MAIL_PASSWORD', 'xxxx xxxx xxxx xxx');
 define('MAIL_PORT', 587);
 
 
