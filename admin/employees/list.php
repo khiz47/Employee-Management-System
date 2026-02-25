@@ -5,8 +5,7 @@ require_once __DIR__ . '/../../includes/auth.php';
 require_once __DIR__ . '/../../includes/db.php';
 
 requireAdmin();
-?>
-<?php
+
 $pageTitle = 'Employees Management';
 require __DIR__ . '/../layout/wrapper-start.php';
 ?>

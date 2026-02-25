@@ -15,12 +15,25 @@ define('APP_NAME', 'Employee Management System');
 // ============================
 // DATABASE (later)
 // ============================
+// define('DB_HOST', 'localhost');
+// define('DB_NAME', 'apvn-fintech');
+// define('DB_USER', 'apvn-fintech');
+// define('DB_PASS', 'FxwrD8p2duBoJ6mKTcuP');
 
 define('DB_HOST', 'localhost');
 define('DB_NAME', 'ems_db');
 define('DB_USER', 'root');
 define('DB_PASS', '');
+
+
 // ============================
+// EMAIL CONFIG
+// ============================
+define('MAIL_HOST', 'smtp.gmail.com');
+define('MAIL_USERNAME', 'khizerqureshi4774@gmail.com');
+define('MAIL_PASSWORD', 'rohy kkww zwli crhp');
+define('MAIL_PORT', 587);
+
 
 /*
 |--------------------------------------------------------------------------

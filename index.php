@@ -17,6 +17,7 @@ $routes = [
     // Admin
     'admin' => 'admin/index.php',
     'admin/dashboard' => 'admin/dashboard.php',
+    'admin/notifications'  => 'admin/notifications.php',
 
     // admin employees
     'admin/employees' => 'admin/employees/index.php',
@@ -51,6 +52,7 @@ $routes = [
     'employee/attendance/'  => 'employee/attendance/index.php',
     'employee/attendance/attendance'  => 'employee/attendance/attendance.php',
     'employee/profile'  => 'employee/profile.php',
+    'employee/notifications'  => 'employee/notifications.php',
 ];
 
 $page = $routes[$request] ?? 'auth/login.php';
