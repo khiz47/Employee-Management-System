@@ -6,8 +6,8 @@ require_once __DIR__ . '/../includes/db.php';
 // ADMIN DETAILS (CHANGE THESE)
 // ============================
 $name     = 'Super Admin';
-$email    = 'admin@company.com';
-$password = 'admin123'; // change later
+$email    = 'khizerqureshi4774@gmail.com';
+$password = 'khizer123'; // change later
 $role     = 'admin';
 $status   = 1;
 

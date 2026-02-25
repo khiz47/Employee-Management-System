@@ -1313,6 +1313,415 @@ $(document).on("change", "#employeeTaskPriority", function () {
   loadEmployeeTasks();
 });
 
+// -----------------------------Notifications code-----------------------------
+let lastNotificationId = 0;
+const notificationSound = new Audio(
+  BASE_URL + "assets/sounds/notification.mp3",
+);
+
+function loadNotifications() {
+  $.post(
+    BASE_URL + "includes/functions.php",
+    { action: "fetch_notifications" },
+    function (res) {
+      if (!res.status) return;
+
+      const rows = res.data.rows;
+      const unread = res.data.unread;
+
+      // 🔔 Check newest notification ID
+      if (rows.length > 0) {
+        const newestId = parseInt(rows[0].id);
+
+        if (lastNotificationId !== 0 && newestId !== lastNotificationId) {
+          notificationSound.play().catch(() => {});
+        }
+
+        lastNotificationId = newestId;
+      }
+
+      $("#notificationCount").text(unread > 0 ? unread : "");
+
+      let html = "";
+
+      if (!res.data.rows.length) {
+        html = `<div class="notification-empty">No notifications</div>`;
+      } else {
+        res.data.rows.forEach((n) => {
+          html += `
+            <div class="notification-item unread" data-id="${n.id}">
+              <a href="${n.link || "#"}">
+                <strong>${n.title}</strong>
+                <div>${n.message}</div>
+              </a>
+            </div>
+          `;
+        });
+      }
+
+      $("#notificationDropdown").html(html);
+    },
+    "json",
+  );
+}
+// 🔔 Toggle dropdown
+$(document).on("click", "#notificationBell", function () {
+  $("#notificationDropdown").toggle();
+});
+// ✅ Mark as read when clicked
+$(document).on("click", ".notification-item a", function (e) {
+  e.preventDefault();
+
+  const item = $(this).closest(".notification-item");
+  const id = item.data("id");
+  const link = $(this).attr("href");
+
+  $.post(
+    BASE_URL + "includes/functions.php",
+    { action: "mark_notification_read", id: id },
+    function (res) {
+      if (res.status) {
+        window.location.href = link; // Redirect after marking read
+      }
+    },
+    "json",
+  );
+});
+
+// 🔄 Live Auto Refresh every 8 seconds
+setInterval(function () {
+  loadNotifications();
+}, 8000);
+
+let soundEnabled = false;
+
+document.addEventListener("click", function () {
+  if (!soundEnabled) {
+    notificationSound
+      .play()
+      .then(() => {
+        notificationSound.pause();
+        notificationSound.currentTime = 0;
+        soundEnabled = true;
+      })
+      .catch(() => {});
+  }
+});
+
+// --------------------------------------------------------
+// Notifications and Pagination start
+// --------------------------------------------------------
+let currentNotifyPage = 1;
+let rowsPerNotifyPage = 10;
+let activeNotifyStatusFilter = "all";
+let activeCheckedFilter = "all";
+let searchNotifyQuery = "";
+
+function loadNotificationsPage() {
+  $.ajax({
+    url: BASE_URL + "includes/functions.php",
+    type: "POST",
+    dataType: "json",
+    data: {
+      action: "load_notifications",
+      page: currentNotifyPage,
+      limit: rowsPerNotifyPage,
+      search: searchNotifyQuery,
+      status: activeNotifyStatusFilter,
+      checked: activeCheckedFilter,
+    },
+    success: function (res) {
+      if (!res.status) return alert(res.message);
+
+      renderNotifyTable(res.data.rows);
+      renderNotifyPagination(res.data.total);
+    },
+  });
+}
+
+function renderNotifyTable(rows) {
+  const tbody = $("#notificationTableBody");
+  tbody.empty();
+
+  if (!rows.length) {
+    tbody.html(`
+      <tr>
+        <td colspan="5" class="text-center py-4">No Notifications found</td>
+      </tr>
+    `);
+    return;
+  }
+
+  rows.forEach((n) => {
+    tbody.append(`
+      <tr class="${n.is_read ? "" : "fw-bold"}">
+        <td>
+          <input type="checkbox" class="notifyCheckbox" value="${n.id}">
+        </td>
+        <td>
+          <i class="fa-solid fa-thumbtack ${n.is_pinned ? "text-primary" : "text-muted"} togglePin" data-id="${n.id}"></i>
+        </td>
+
+        <td>
+          <i class="fa-solid fa-star ${n.is_highlighted ? "text-warning" : "text-muted"} toggleHighlight" data-id="${n.id}"></i>
+        </td>
+
+        <td>
+          <div>
+            <strong>${n.title}</strong>
+            <div class="text-muted small">${n.message}</div>
+          </div>
+        </td>
+
+        <td>${n.created_at}</td>
+
+        <td>
+          <a href="${n.link || "#"}" class="btn btn-sm btn-outline-primary">
+            Open
+          </a>
+
+          <button class="btn btn-sm btn-outline-secondary toggleRead" data-id="${n.id}">
+            ${n.is_read ? "Unread" : "Read"}
+          </button>
+
+          <button class="btn btn-sm btn-outline-danger deleteSingleNotify" data-id="${n.id}">
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        </td>
+      </tr>
+    `);
+  });
+}
+
+function renderNotifyPagination(totalRows) {
+  const pagination = $("#notifypagination");
+  pagination.empty();
+
+  if (rowsPerNotifyPage === "all") return;
+
+  const totalPages = Math.ceil(totalRows / rowsPerNotifyPage);
+  if (totalPages <= 1) return;
+
+  const maxVisible = 2; // pages before & after current
+
+  // PREV BUTTON
+  pagination.append(`
+    <li class="page-item ${currentNotifyPage === 1 ? "disabled" : ""}">
+      <a class="page-link" href="#" data-page="${currentNotifyPage - 1}">Prev</a>
+    </li>
+  `);
+
+  function addPage(page) {
+    pagination.append(`
+      <li class="page-item ${page === currentNotifyPage ? "active" : ""}">
+        <a class="page-link" href="#" data-page="${page}">${page}</a>
+      </li>
+    `);
+  }
+
+  function addDots() {
+    pagination.append(`
+      <li class="page-item disabled">
+        <span class="page-link">...</span>
+      </li>
+    `);
+  }
+
+  // ALWAYS show first page
+  addPage(1);
+
+  // LEFT DOTS
+  if (currentNotifyPage - maxVisible > 2) {
+    addDots();
+  }
+
+  // MIDDLE PAGES
+  const start = Math.max(2, currentNotifyPage - maxVisible);
+  const end = Math.min(totalPages - 1, currentNotifyPage + maxVisible);
+
+  for (let i = start; i <= end; i++) {
+    addPage(i);
+  }
+
+  // RIGHT DOTS
+  if (currentNotifyPage + maxVisible < totalPages - 1) {
+    addDots();
+  }
+
+  // ALWAYS show last page (if more than 1 page)
+  if (totalPages > 1) {
+    addPage(totalPages);
+  }
+
+  // NEXT BUTTON
+  pagination.append(`
+    <li class="page-item ${currentNotifyPage === totalPages ? "disabled" : ""}">
+      <a class="page-link" href="#" data-page="${currentNotifyPage + 1}">Next</a>
+    </li>
+  `);
+
+  $("#paginationInfo").text(
+    rowsPerNotifyPage === "all"
+      ? `Showing all ${totalRows} notifications`
+      : `Showing ${(currentNotifyPage - 1) * rowsPerNotifyPage + 1}
+       to ${Math.min(currentNotifyPage * rowsPerNotifyPage, totalRows)}
+       of ${totalRows} notifications`,
+  );
+}
+
+$(document).on("click", ".toggleRead", function () {
+  const id = $(this).data("id");
+
+  $.post(
+    BASE_URL + "includes/functions.php",
+    {
+      action: "toggle_notification_read",
+      id: id,
+    },
+    function () {
+      loadNotificationsPage();
+    },
+    "json",
+  );
+});
+
+$(document).on("click", ".togglePin", function () {
+  const id = $(this).data("id");
+
+  $.post(
+    BASE_URL + "includes/functions.php",
+    {
+      action: "toggle_notification_pin",
+      id: id,
+    },
+    function () {
+      loadNotificationsPage();
+    },
+    "json",
+  );
+});
+
+$(document).on("click", ".toggleHighlight", function () {
+  const id = $(this).data("id");
+
+  $.post(
+    BASE_URL + "includes/functions.php",
+    {
+      action: "toggle_notification_highlight",
+      id: id,
+    },
+    function () {
+      loadNotificationsPage();
+    },
+    "json",
+  );
+});
+
+$(document).on("keyup", "#notificationSearch", function () {
+  searchNotifyQuery = $(this).val();
+  currentNotifyPage = 1;
+  loadNotificationsPage();
+});
+
+$(document).on("change", "#notifyStatusFilter", function () {
+  activeNotifyStatusFilter = $(this).val();
+  currentNotifyPage = 1;
+  loadNotificationsPage();
+});
+
+$(document).on("change", "#checkedFilter", function () {
+  activeCheckedFilter = $(this).val();
+  currentNotifyPage = 1;
+  loadNotificationsPage();
+});
+
+$(document).on("change", "#rowsPerNotifyPage", function () {
+  rowsPerNotifyPage = $(this).val();
+  currentNotifyPage = 1;
+  loadNotificationsPage();
+});
+
+$(document).on("click", "#notifypagination .page-link", function (e) {
+  e.preventDefault();
+  const page = $(this).data("page");
+  if (!isNaN(page)) {
+    currentNotifyPage = page;
+    loadNotificationsPage();
+  }
+});
+
+$(document).on("change", "#selectAllNotifications", function () {
+  $(".notifyCheckbox").prop("checked", this.checked);
+});
+
+function getSelectedNotifications() {
+  return $(".notifyCheckbox:checked")
+    .map(function () {
+      return $(this).val();
+    })
+    .get();
+}
+$(document).on("click", "#bulkMarkRead", function () {
+  const ids = getSelectedNotifications();
+  if (!ids.length) return alert("Select notifications first");
+
+  $.post(
+    BASE_URL + "includes/functions.php",
+    { action: "bulk_mark_read", ids: ids },
+    function () {
+      loadNotificationsPage();
+    },
+    "json",
+  );
+});
+let deleteIds = [];
+// SINGLE DELETE BUTTON
+$(document).on("click", ".deleteSingleNotify", function () {
+  const id = $(this).data("id");
+
+  deleteIds = [id]; // Store single ID in array
+
+  new bootstrap.Modal(document.getElementById("deleteNotifyModal")).show();
+});
+// BULK DELETE BUTTON
+$(document).on("click", "#bulkDelete", function () {
+  const selected = getSelectedNotifications();
+
+  if (!selected.length) {
+    alert("Select notifications first");
+    return;
+  }
+
+  deleteIds = selected;
+
+  new bootstrap.Modal(document.getElementById("deleteNotifyModal")).show();
+});
+
+// CONFIRM DELETE (COMMON FOR BOTH)
+$(document).on("click", "#confirmDeleteNotifications", function () {
+  if (!deleteIds.length) return;
+
+  $.post(
+    BASE_URL + "includes/functions.php",
+    {
+      action: "delete_notifications",
+      ids: deleteIds,
+    },
+    function (res) {
+      if (res.status) {
+        loadNotificationsPage();
+
+        bootstrap.Modal.getInstance(
+          document.getElementById("deleteNotifyModal"),
+        ).hide();
+
+        deleteIds = [];
+      }
+    },
+    "json",
+  );
+});
+
 $(document).ready(function () {
   const deptId = $("#departmentSelect").val();
 
@@ -1447,5 +1856,14 @@ $(document).ready(function () {
 
   if ($("#employeeTaskContainer").length) {
     loadEmployeeTasks();
+  }
+
+  loadNotifications();
+  setTimeout(() => {
+    lastNotificationId = 0;
+  }, 1000);
+
+  if ($("#notificationTableBody").length) {
+    loadNotificationsPage();
   }
 });

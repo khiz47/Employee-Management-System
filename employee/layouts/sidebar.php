@@ -13,9 +13,9 @@
             <i class="fa-solid fa-list-check"></i> Tasks
         </a>
 
-        <!-- <a href="<?= BASE_URL ?>employee/attendance/attendance">
-            <i class="fa-solid fa-building"></i> Attendance
-        </a> -->
+        <a href="<?= BASE_URL ?>employee/notifications">
+            <i class="fa-solid fa-bell"></i> Notifications
+        </a>
 
         <a href="<?= BASE_URL ?>logout">
             <i class="fa-solid fa-right-from-bracket"></i> Logout

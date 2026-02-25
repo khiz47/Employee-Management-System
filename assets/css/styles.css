@@ -726,6 +726,74 @@ a:hover {
   transition: 0.3s ease;
 }
 
+/* ================= NOTIFICATIONS ================= */
+.notification-wrapper {
+  position: relative;
+}
+
+.notification-bell {
+  position: relative;
+  cursor: pointer;
+  margin-left: 15px;
+}
+
+.notification-count {
+  position: absolute;
+  top: -6px;
+  right: -8px;
+  background: var(--primary-color);
+  color: #fff;
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 50px;
+}
+
+.notification-dropdown {
+  position: absolute;
+  right: 0;
+  top: 40px;
+  width: 320px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-md);
+  display: none;
+  max-height: 400px;
+  overflow-y: auto;
+  z-index: 9999;
+}
+
+.notification-item {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 14px;
+}
+
+.notification-item a {
+  color: var(--text-dark);
+  text-decoration: none;
+  display: block;
+}
+
+.notification-item:hover {
+  background: var(--card-hover);
+}
+
+.notification-item.unread {
+  background: var(--bg-light);
+  animation: fadeHighlight 0.8s ease;
+}
+
+@keyframes fadeHighlight {
+  from {
+    background: var(--primary-color);
+    color: white;
+  }
+  to {
+    background: var(--bg-light);
+  }
+}
+
 /* =========================
    RESPONSIVE LOGIN UI
 ========================= */

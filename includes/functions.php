@@ -101,6 +101,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             fetchEmployeeTasks($conn);
             break;
 
+        case 'fetch_notifications':
+            fetchNotifications($conn);
+            break;
+
+        case 'mark_notification_read':
+            markNotificationRead($conn);
+            break;
+
+        case 'load_notifications':
+            loadNotificationsPage($conn);
+            break;
+
+        case 'toggle_notification_read':
+            toggleNotificationRead($conn);
+            break;
+
+        case 'toggle_notification_pin':
+            toggleNotificationPin($conn);
+            break;
+
+        case 'toggle_notification_highlight':
+            toggleNotificationHighlight($conn);
+            break;
+
+        case 'bulk_mark_read':
+            bulkMarkRead($conn);
+            break;
+
+        case 'delete_notifications':
+            deleteNotifications($conn);
+            break;
+
+
+
 
         default:
             sendResponse('error', null, 'Invalid action.');
@@ -755,11 +789,32 @@ function createTask($conn)
 
         // Insert assignments
         foreach ($assignedUsers as $userId) {
+
+            // Insert assignment
             $conn->prepare("
                 INSERT INTO task_assignments (task_id, user_id)
                 VALUES (?, ?)
             ")->execute([$taskId, $userId]);
+
+            // 🔔 Create notification for each assigned employee
+            // createNotification(
+            //     $conn,
+            //     $userId,
+            //     'New Task Assigned',
+            //     'You have been assigned a new task: ' . $title,
+            //     'task',
+            //     BASE_URL . 'employee/tasks/view?id=' . $taskId
+            // );
+            // 🔔 Notify participants (this will create notification + send email)
+            notifyTaskParticipants(
+                $conn,
+                $taskId,
+                'New Task Assigned',
+                'You have been assigned a new task: ' . $title,
+                $createdBy // exclude admin who created it
+            );
         }
+
 
         // Log
         $conn->prepare("
@@ -982,6 +1037,72 @@ function checkTaskAccess($conn, $taskId)
 
     return true;
 }
+function notifyTaskParticipants($conn, $taskId, $title, $message, $excludeUserId = null)
+{
+    // Get assigned users
+    $stmt = $conn->prepare("
+        SELECT user_id FROM task_assignments
+        WHERE task_id = ?
+    ");
+    $stmt->execute([$taskId]);
+    $assignedUsers = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+    // Get task creator
+    $creatorStmt = $conn->prepare("
+        SELECT created_by FROM tasks WHERE id = ?
+    ");
+    $creatorStmt->execute([$taskId]);
+    $creatorId = $creatorStmt->fetchColumn();
+
+    $recipients = array_unique(array_merge($assignedUsers, [$creatorId]));
+    require_once __DIR__ . '/mail.php';
+    foreach ($recipients as $userId) {
+
+        if ($excludeUserId && $userId == $excludeUserId) {
+            continue;
+        }
+
+        // Get role of user
+        $roleStmt = $conn->prepare("SELECT role FROM users WHERE id = ?");
+        $roleStmt->execute([$userId]);
+        $role = $roleStmt->fetchColumn();
+
+        $link = $role === 'admin'
+            ? BASE_URL . 'admin/tasks/view?id=' . $taskId
+            : BASE_URL . 'employee/tasks/view?id=' . $taskId;
+
+        createNotification(
+            $conn,
+            $userId,
+            $title,
+            $message,
+            'task',
+            $link
+        );
+
+
+        // Get user email
+        $userStmt = $conn->prepare("SELECT email, name FROM users WHERE id = ?");
+        $userStmt->execute([$userId]);
+        $user = $userStmt->fetch();
+
+        if ($user) {
+            $subject = $title;
+            $body = "
+                <h3>$title</h3>
+                <p>$message</p>
+                <p>
+                    <a href='$link' style='padding:10px 15px;
+                    background:#2563eb;color:#fff;text-decoration:none;
+                    border-radius:5px;'>Open Task</a>
+                </p>
+            ";
+
+            sendEmail($user['email'], $user['name'], $subject, $body);
+        }
+    }
+}
+
 // helpers function------------------------
 
 function addTaskComment($conn)
@@ -1025,6 +1146,15 @@ function addTaskComment($conn)
             'Added a comment',
             currentUser()['id']
         ]);
+
+        // Notify participants
+        notifyTaskParticipants(
+            $conn,
+            $taskId,
+            'New Comment on Task',
+            currentUser()['name'] . ' commented on a task.',
+            currentUser()['id']
+        );
 
         $conn->commit();
 
@@ -1083,6 +1213,14 @@ function updateTaskComment($conn)
             'Edited a comment',
             currentUser()['id']
         ]);
+        notifyTaskParticipants(
+            $conn,
+            $comment['task_id'],
+            'Comment Edited',
+            currentUser()['name'] . ' edited a comment.',
+            currentUser()['id']
+        );
+
 
         $conn->commit();
 
@@ -1262,6 +1400,15 @@ function updateTaskStatus($conn)
             currentUser()['id']
         ]);
 
+        // 🔔 Notify others
+        notifyTaskParticipants(
+            $conn,
+            $taskId,
+            'Task Status Updated',
+            currentUser()['name'] . ' changed task status to ' . str_replace('_', ' ', $status),
+            currentUser()['id']
+        );
+
         $conn->commit();
         sendResponse(true, null, 'Status updated');
     } catch (Exception $e) {
@@ -1429,4 +1576,236 @@ function fetchEmployeeTasks($conn)
         'rows' => $rows,
         'total' => $total
     ], 'OK');
+}
+
+function createNotification($conn, $userId, $title, $message, $type = null, $link = null)
+{
+    $stmt = $conn->prepare("
+        INSERT INTO notifications (user_id, title, message, type, link)
+        VALUES (?, ?, ?, ?, ?)
+    ");
+
+    $stmt->execute([
+        $userId,
+        $title,
+        $message,
+        $type,
+        $link
+    ]);
+}
+
+function fetchNotifications($conn)
+{
+    if (!isLoggedIn()) {
+        sendResponse(false, null, 'Unauthorized');
+    }
+
+    $stmt = $conn->prepare("
+        SELECT *
+        FROM notifications
+        WHERE user_id = ? AND is_read = 0
+        ORDER BY created_at DESC
+        LIMIT 10
+    ");
+
+    $stmt->execute([currentUser()['id']]);
+    $rows = $stmt->fetchAll();
+
+    $countStmt = $conn->prepare("
+        SELECT COUNT(*) 
+        FROM notifications 
+        WHERE user_id = ? AND is_read = 0
+    ");
+    $countStmt->execute([currentUser()['id']]);
+    $unread = $countStmt->fetchColumn();
+
+    sendResponse(true, [
+        'rows' => $rows,
+        'unread' => $unread
+    ], 'OK');
+}
+function markNotificationRead($conn)
+{
+    if (!isLoggedIn()) {
+        sendResponse(false, null, 'Unauthorized');
+    }
+
+    $id = (int)($_POST['id'] ?? 0);
+
+    if (!$id) {
+        sendResponse(false, null, 'Invalid notification');
+    }
+
+    $stmt = $conn->prepare("
+        UPDATE notifications
+        SET is_read = 1
+        WHERE id = ? AND user_id = ?
+    ");
+
+    $stmt->execute([$id, currentUser()['id']]);
+
+    sendResponse(true, null, 'Marked as read');
+}
+
+function loadNotificationsPage($conn)
+{
+    if (!isLoggedIn()) {
+        sendResponse(false, null, 'Unauthorized');
+    }
+
+    $userId = currentUser()['id'];
+
+    $page  = (int)($_POST['page'] ?? 1);
+    $limit = $_POST['limit'] ?? 10;
+    $search = trim($_POST['search'] ?? '');
+    $status = $_POST['status'] ?? 'all';
+    $checked = $_POST['checked'] ?? 'all';
+
+    if ($limit === 'all') {
+        $offset = 0;
+    } else {
+        $limit = (int)$limit;
+        $offset = ($page - 1) * $limit;
+    }
+
+
+    $where = "WHERE user_id = ? AND is_deleted = 0";
+    $params = [$userId];
+
+    // 🔍 Search
+    if ($search !== '') {
+        $where .= " AND (title LIKE ? OR message LIKE ?)";
+        $params[] = "%$search%";
+        $params[] = "%$search%";
+    }
+
+    // ✅ Read/Unread filter
+    if ($status !== 'all') {
+        $where .= " AND is_read = ?";
+        $params[] = (int)$status;
+    }
+
+    // 📌 Pin / Highlight filter
+    if ($checked === 'pin') {
+        $where .= " AND is_pinned = 1";
+    }
+
+    if ($checked === 'highlighted') {
+        $where .= " AND is_highlighted = 1";
+    }
+
+    // Count
+    $countStmt = $conn->prepare("SELECT COUNT(*) FROM notifications $where");
+    $countStmt->execute($params);
+    $total = $countStmt->fetchColumn();
+
+    // Fetch
+    $sql = "SELECT * FROM notifications 
+            $where 
+            ORDER BY is_pinned DESC, created_at DESC";
+
+    if ($limit !== 'all') {
+        $sql .= " LIMIT $limit OFFSET $offset";
+    }
+
+
+    $stmt = $conn->prepare($sql);
+    $stmt->execute($params);
+    $rows = $stmt->fetchAll();
+
+    sendResponse(true, [
+        'rows' => $rows,
+        'total' => $total
+    ], 'OK');
+}
+
+function toggleNotificationRead($conn)
+{
+    $id = (int)$_POST['id'];
+    $userId = currentUser()['id'];
+
+    $conn->prepare("
+        UPDATE notifications 
+        SET is_read = IF(is_read=1,0,1)
+        WHERE id = ? AND user_id = ?
+    ")->execute([$id, $userId]);
+
+    sendResponse(true, null, 'Marked as read');
+}
+
+function toggleNotificationPin($conn)
+{
+    $id = (int)$_POST['id'];
+    $userId = currentUser()['id'];
+
+    $conn->prepare("
+        UPDATE notifications 
+        SET is_pinned = IF(is_pinned=1,0,1)
+        WHERE id = ? AND user_id = ?
+    ")->execute([$id, $userId]);
+
+    sendResponse(true, null, 'Pinned');
+}
+
+function toggleNotificationHighlight($conn)
+{
+    $id = (int)$_POST['id'];
+    $userId = currentUser()['id'];
+
+    $conn->prepare("
+        UPDATE notifications 
+        SET is_highlighted = IF(is_highlighted=1,0,1)
+        WHERE id = ? AND user_id = ?
+    ")->execute([$id, $userId]);
+
+    sendResponse(true, null, 'Highlighted');
+}
+
+function bulkMarkRead($conn)
+{
+    $ids = $_POST['ids'] ?? [];
+    $userId = currentUser()['id'];
+
+    if (!$ids) sendResponse(false, null, 'No notifications selected');
+
+    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+
+    $sql = "UPDATE notifications 
+            SET is_read = 1 
+            WHERE id IN ($placeholders) 
+            AND user_id = ?";
+
+    $stmt = $conn->prepare($sql);
+    $stmt->execute([...$ids, $userId]);
+
+    sendResponse(true, null, 'Marked as read');
+}
+
+function deleteNotifications($conn)
+{
+    if (!isLoggedIn()) {
+        sendResponse(false, null, 'Unauthorized');
+    }
+
+    $ids = $_POST['ids'] ?? [];
+    $userId = currentUser()['id'];
+
+    if (!$ids || !is_array($ids)) {
+        sendResponse(false, null, 'Invalid request');
+    }
+
+    // Sanitize IDs
+    $ids = array_map('intval', $ids);
+
+    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+
+    $sql = "UPDATE notifications 
+            SET is_deleted = 1 
+            WHERE id IN ($placeholders)
+            AND user_id = ?";
+
+    $stmt = $conn->prepare($sql);
+    $stmt->execute([...$ids, $userId]);
+
+    sendResponse(true, null, 'Deleted successfully');
 }

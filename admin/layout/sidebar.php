@@ -17,6 +17,10 @@
             <i class="fa-solid fa-list-check"></i> Tasks
         </a>
 
+        <a href="<?= BASE_URL ?>admin/notifications">
+            <i class="fa-solid fa-bell"></i> Notifications
+        </a>
+
         <a href="<?= BASE_URL ?>admin/departments">
             <i class="fa-solid fa-building"></i> Departments
         </a>
