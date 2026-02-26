@@ -138,3 +138,8 @@ A) Add notification triggers for comment + status change
 B) Add mark all as read
 C) Add real-time (no polling) system
 D) Add email notifications
+
+1️⃣ Improve install UX professionally
+2️⃣ Add push notifications without Firebase
+3️⃣ Add splash screen + app loading screen
+4️⃣ Add app update detection system

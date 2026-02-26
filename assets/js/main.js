@@ -981,12 +981,57 @@ function loadTaskHistory() {
   });
 }
 
+// $(document).on("submit", ".addCommentForm", function (e) {
+//   e.preventDefault();
+
+//   const form = $(this);
+//   const taskId = form.find('[name="task_id"]').val();
+//   const comment = form.find('[name="comment"]').val();
+
+//   $.ajax({
+//     url: BASE_URL + "includes/functions.php",
+//     type: "POST",
+//     dataType: "json",
+//     data: {
+//       action: "add_task_comment",
+//       task_id: taskId,
+//       comment: comment,
+//     },
+//     success: function (res) {
+//       if (res.status) {
+//         const commentHtml = `
+//       <div class="border-bottom pb-2 mb-2">
+//         <strong>You</strong>
+//         <div>${comment}</div>
+//       </div>
+//     `;
+//         $(".task-comments").append(commentHtml);
+//         form[0].reset();
+//       } else {
+//         alert(res.message);
+//       }
+//     },
+//   });
+// });
+
 $(document).on("submit", ".addCommentForm", function (e) {
   e.preventDefault();
 
   const form = $(this);
   const taskId = form.find('[name="task_id"]').val();
-  const comment = form.find('[name="comment"]').val();
+  const textarea = form.find('[name="comment"]');
+  const comment = textarea.val().trim();
+  const button = form.find("button");
+
+  if (!comment) {
+    alert("Comment cannot be empty.");
+    return;
+  }
+
+  // 🚫 Prevent double click
+  if (button.prop("disabled")) return;
+
+  button.prop("disabled", true).text("Adding...");
 
   $.ajax({
     url: BASE_URL + "includes/functions.php",
@@ -999,17 +1044,27 @@ $(document).on("submit", ".addCommentForm", function (e) {
     },
     success: function (res) {
       if (res.status) {
-        const commentHtml = `
-      <div class="border-bottom pb-2 mb-2">
-        <strong>You</strong>
-        <div>${comment}</div>
-      </div>
-    `;
-        $(".task-comments").append(commentHtml);
-        form[0].reset();
+        const newCommentHtml = `
+          <div class="comment-item">
+            <div class="d-flex justify-content-between">
+              <strong>You</strong>
+              <small>Just now</small>
+            </div>
+            <div class="comment-text">
+              ${comment.replace(/\n/g, "<br>")}
+            </div>
+          </div>
+        `;
+
+        $(".task-comments").append(newCommentHtml);
+
+        textarea.val("");
       } else {
         alert(res.message);
       }
+    },
+    complete: function () {
+      button.prop("disabled", false).text("Add Comment");
     },
   });
 });
@@ -1867,3 +1922,12 @@ $(document).ready(function () {
     loadNotificationsPage();
   }
 });
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", function () {
+    navigator.serviceWorker
+      .register(BASE_URL + "service-worker.js")
+      .then(() => console.log("Service Worker Registered"))
+      .catch((err) => console.log("SW Error:", err));
+  });
+}
